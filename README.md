@@ -13,8 +13,8 @@
 > python app.py ask 'vintage graphic tee under $30'
 > ```
 >
-> All three tools are stubs, so that last command will do nothing useful yet.
-> That's the starting position.
+> All three tools and the planning loop are implemented. Outfit suggestions
+> and fit cards require a working model connection.
 >
 > **The rest of this file is your submission.** Fill it in as you go.
 
@@ -41,6 +41,13 @@
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
 
+FitFindr helps a shopper find thrifted clothing by describing an item, optionally
+including a size and maximum price. It searches the provided listings dataset,
+selects the highest-scoring match, and asks a model for outfit ideas using the
+shopper's wardrobe, or general styling advice when the wardrobe is empty.
+It then asks the model for a short fit-card caption mentioning the item, price,
+and selling platform. If no listings match, it stops and suggests changing the
+keywords, price limit, or size filter.
 
 
 ---
@@ -101,6 +108,11 @@
 **How the query is parsed:** Regex and string splitting, no model call. A regex pulls the price ceiling from phrases like "under $30" into `max_price`, another pulls a size token like "size M" into `size`, and the remaining words become `description`. The result goes in `session["parsed"]`.
 
 **What moves through the session:** `query` → `parsed` (description, size, max_price) → `search_results` → `selected_item` (first result) → `outfit_suggestion` → `fit_card`. `error` stays `None` unless the run stops early.
+
+Each tool's result is stored in the session before the next tool reads it.
+The loop checks `trace.check_iterations(count)` before each tool step. The
+no-match branch returns immediately, leaving `outfit_suggestion` and `fit_card`
+as `None` and skipping both model tools.
 
 ---
 
@@ -188,15 +200,15 @@ Found my holy grail medium wash vintage Levi's 501 jeans while digging through t
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I asked Codex to add three acceptance criteria, including one about state and one about the fit card, and then to explain the target under each of the five criteria.
+- *What came back:* Codex proposed checking that the selected item's ID, title, and price survive the handoff to `suggest_outfit` in 5 of 5 tries, that 4 of 5 fit cards include the required details in 2–4 sentences, and that search respects the price ceiling in 5 of 5 tries.
+- *What I changed:* With Codex's help, I replaced the three placeholders in `criteria.md` with those measurable targets and added reasons tied to keyword matching, session state, numeric filtering, and model variability.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I asked Codex to implement `agent.py::run_agent`, save each tool result in the session, and check both a matching query and a query with no results.
+- *What came back:* Codex implemented query parsing and the branch rule, and added `test_agent.py`. The checks used real search with controlled model responses to verify the exact item passed to `suggest_outfit`; they also verified that an empty search skips both later tools and leaves `fit_card` as `None`.
+- *What I changed:* With Codex's help, I replaced the placeholder loop with the session-based implementation and added complete-session printing and repeatable checks. The local checks passed, but the attempted live model run was blocked by the Python environment and a missing dependency, so I have not treated the controlled responses as a successful live run.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
