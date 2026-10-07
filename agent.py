@@ -13,6 +13,9 @@ Build and test your three tools in `tools.py` first. Then come here.
     python agent.py          runs both example paths below
 """
 
+import re
+from pprint import pprint
+
 import config
 import trace
 from tools import search_listings, suggest_outfit, create_fit_card
@@ -107,14 +110,56 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     """
     session = new_session(query, wardrobe)
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
+    description = session["query"]
+    price_match = re.search(
+        r"\b(?:under|below|up to)\s*\$?\s*(\d+(?:\.\d+)?)\b",
+        description, re.IGNORECASE,
+    )
+    max_price = float(price_match.group(1)) if price_match else None
+    if price_match:
+        description = description[:price_match.start()] + description[price_match.end():]
+    size_match = re.search(
+        r"\bsize\s+(US\s*\d+(?:\.\d+)?|[A-Za-z0-9]+(?:/[A-Za-z0-9]+)?)\b",
+        description, re.IGNORECASE,
+    )
+    size = size_match.group(1) if size_match else None
+    if size_match:
+        description = description[:size_match.start()] + description[size_match.end():]
+    session["parsed"] = {
+        "description": " ".join(description.replace(",", " ").split()),
+        "size": size,
+        "max_price": max_price,
+    }
+
+    for count, tool_name in enumerate(
+        ("search_listings", "suggest_outfit", "create_fit_card"), start=1
+    ):
+        trace.check_iterations(count)
+        if tool_name == "search_listings":
+            session["search_results"] = search_listings(**session["parsed"])
+            if not session["search_results"]:
+                session["error"] = (
+                    "No matching listings. Try different keywords, increase your "
+                    "price limit, or remove the size filter."
+                )
+                return session
+            session["selected_item"] = session["search_results"][0]
+        elif tool_name == "suggest_outfit":
+            session["outfit_suggestion"] = suggest_outfit(
+                session["selected_item"], session["wardrobe"]
+            )
+        else:
+            session["fit_card"] = create_fit_card(
+                session["outfit_suggestion"], session["selected_item"]
+            )
     return session
 
 
 # ── running it directly ───────────────────────────────────────────────────────
 
 def _show(session: dict) -> None:
+    print("Complete session:")
+    pprint(session, sort_dicts=False)
     if session["error"]:
         print(f"  stopped: {session['error']}")
         print(f"  fit_card is {session['fit_card']!r} — it should still be None here")
