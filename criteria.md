@@ -24,10 +24,7 @@ data earns credit; *"80% seemed reasonable"* does not.
 Given a query that matches at least one listing, the agent completes all three
 tool calls and returns a fit card — in at least 4 of 5 tries.
 
-**Why this target:**
-<!-- Why 4 of 5 and not 5 of 5? Something about your search, probably —
-     "my search is a plain keyword match and some phrasings will miss" is a
-     real answer. -->
+**Why this target:** I picked 4 of 5 because the planned search uses keyword matching, so a query describing an available item may use words that do not appear in its listing. Requiring 5 of 5 would assume the search understands every phrasing even though it does not use a model to interpret meaning.
 
 ---
 
@@ -36,67 +33,31 @@ tool calls and returns a fit card — in at least 4 of 5 tries.
 Given a query that matches no listings, the agent stops before calling
 `suggest_outfit` and returns a message naming what to change — 5 of 5 tries.
 
-**Why this target:**
-<!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
-     about this path? -->
+**Why this target:** I picked 5 of 5 because an empty search result should trigger a fixed branch that returns a helpful message without calling the model. This is already the strictest success rate, and there is no generated output on this path to justify allowing a miss.
 
 ---
 
-## 3. Something about state
+## 3. The selected item stays the same between tools
 
-<!-- YOU WRITE THIS ONE.
+For five queries that each return at least one listing, the first search result, `session["selected_item"]`, and the `new_item` argument actually passed to `suggest_outfit` must have the same item ID, title, and price — 5 of 5 tries. Check the captured tool arguments against the session values for each run.
 
-     How would you know that the item your search found is the same item the
-     next tool received? Name something countable or observable.
-
-     This is the criterion people find hardest, because state failure doesn't
-     look like state failure — it looks like a tool problem. Something that
-     compares session["selected_item"] against what actually reached
-     suggest_outfit is the shape you're after. -->
-
-
-
-**Why this target:**
-
-
+**Why this target:** The loop copies an existing listing into the session and passes it to the next tool without asking the model to choose or rewrite it. This handoff should be exact every time; a mismatch would mean the outfit is being made for the wrong item or with changed listing details.
 
 ---
 
-## 4. Something about the fit card
+## 4. The fit card includes the find's details in a short caption
 
-<!-- YOU WRITE THIS ONE.
+Given five different listings and a non-empty outfit suggestion for each, `create_fit_card` returns a caption of 2–4 sentences that identifies the item and includes its correct price and platform — in at least 4 of 5 tries. A try passes only when all of these requirements are met.
 
-     The fit card calls a model, so the same input can produce different words
-     each time. That's not a bug — it's the nature of the tool. So what would
-     make it acceptable?
-
-     Think about what you'd actually be unhappy to see. A caption that never
-     mentions the price? Two different items producing the same opening
-     sentence? A card longer than a caption anyone would post? Any of those can
-     be turned into a number. -->
-
-
-
-**Why this target:**
-
-
+**Why this target:** The item, price, and platform come from the listing, so there is enough information to include all three. The model can vary its wording and sentence count, so 4 of 5 allows one miss while still requiring most captions to be accurate and short enough to post.
 
 ---
 
-## 5. Your choice
+## 5. Search respects the user's price ceiling
 
-<!-- YOU WRITE THIS ONE TOO.
+For five calls to `search_listings` with a `max_price`, every returned listing must have a price at or below that limit — 5 of 5 tries. Use keywords that match listings both below and above the limit, and include one case where a matching listing costs exactly the limit; that listing must remain eligible. Each call must return at least one matching listing within the budget.
 
-     Pick something you actually care about getting right. Speed, the empty
-     wardrobe path, what happens when the model can't be reached, whether the
-     search respects a price ceiling — anything, as long as it names a number
-     or an observable outcome. -->
-
-
-
-**Why this target:**
-
-
+**Why this target:** Price filtering compares numeric values without calling the model, so it should enforce the budget every time. Testing an exact-price match also checks the inclusive limit promised in the tool inventory, while requiring a result prevents an always-empty search from passing.
 
 ---
 
