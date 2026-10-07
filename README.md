@@ -200,15 +200,15 @@ Found my holy grail medium wash vintage Levi's 501 jeans while digging through t
 
 **Moment 1**
 
-- *What I asked for:* I asked Codex to add three acceptance criteria, including one about state and one about the fit card, and then to explain the target under each of the five criteria.
-- *What came back:* Codex proposed checking that the selected item's ID, title, and price survive the handoff to `suggest_outfit` in 5 of 5 tries, that 4 of 5 fit cards include the required details in 2–4 sentences, and that search respects the price ceiling in 5 of 5 tries.
-- *What I changed:* With Codex's help, I replaced the three placeholders in `criteria.md` with those measurable targets and added reasons tied to keyword matching, session state, numeric filtering, and model variability.
-
+- *What I asked for:* I asked claude to write the tools in tools.py based on the spec and expaine to me and make sure that it follows the spec.
+- *What came back:* Claude returned the tools implemented and the explanation each tool and what it does.
+- *What I changed:*  I made sure that tthe three placeholders in criteria.md are had measurable targets and added resons tried to keyword matching, session state, numeric filtering and model variability with the help of claaude
 **Moment 2**
 
-- *What I asked for:* I asked Codex to implement `agent.py::run_agent`, save each tool result in the session, and check both a matching query and a query with no results.
-- *What came back:* Codex implemented query parsing and the branch rule, and added `test_agent.py`. The checks used real search with controlled model responses to verify the exact item passed to `suggest_outfit`; they also verified that an empty search skips both later tools and leaves `fit_card` as `None`.
-- *What I changed:* With Codex's help, I replaced the placeholder loop with the session-based implementation and added complete-session printing and repeatable checks. The local checks passed, but the attempted live model run was blocked by the Python environment and a missing dependency, so I have not treated the controlled responses as a successful live run.
+- *What I asked for:* I asked to double check and see it  the tools are doing what the spec said they would do and return.
+- *What came back:* claude return an explanations and evidence to show that the tools are following the spec.
+- *What I changed:* with cladue, i replaced the placed holder lop with the sesstion-based implementation and added complete-sessio printing and repeatable checks. 
+
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
