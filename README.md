@@ -67,7 +67,7 @@ keywords, price limit, or size filter.
 ### `search_listings`
 
 - **What it does:** Searches the thrift listings by keyword, with an optional size and price ceiling, without calling the model.
-- **Inputs:** `description` (str), `size` (str | None, optional), `max_price` (float | None, optional, inclusive)
+- **Inputs:** `description` (str), `size` (str | None, optional, defaults to None), `max_price` (float | None, optional, defaults to None, inclusive ceiling in dollars)
 - **Returns:** A list of listing dicts (each with id, title, description, category, style_tags, size, condition, price, colors, brand, platform), best keyword match first, at most `config.SEARCH_RESULT_LIMIT` items.
 - **When it has nothing:** An empty list `[]` — never `None`, never an exception.
 - **Matching rules:** A size matches if, compared case-insensitively, it equals the requested size or equals one part of a combined size such as "S/M" split on "/" (so "M" matches "S/M", but "s" does not match "us 9" or "xl"). Each listing scores one point per distinct description word found in its title, description, category, style_tags or colors; listings scoring zero are dropped. `max_price` keeps listings priced at or below it.
@@ -306,6 +306,9 @@ behaved differently afterwards. If the rewire didn't work, say exactly where it
 broke — the error text and the last thing that worked. That earns the point in
 full. -->
 
+Registered `search_listings` and switched `run_agent()` to `mcp_client.call_tool`.
+Verification is pending: `python` is unavailable, and the virtual environment
+reports `No Python at '"C:\Users\eth\AppData\Local\Programs\Python\Python312\python.exe'`.
 
 
 ---

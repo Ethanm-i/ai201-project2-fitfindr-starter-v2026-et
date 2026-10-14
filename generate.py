@@ -328,19 +328,23 @@ def generate(
                 or "resource" in message and "exhaust" in message
                 or "rate" in message and "limit" in message
             )
-            if not rate_limited:
+            unavailable = getattr(exc, "code", None) == 503 or "503" in message
+            if not (rate_limited or unavailable):
                 raise ModelUnavailable(_explain(exc)) from exc
+            if attempt + 1 == config.MAX_RETRIES:
+                break
             backoff = _retry_delay(exc, attempt)
+            if unavailable:
+                backoff = max(backoff, min(60.0, 5.0 * 2 ** attempt))
             print(
-                f"  [rate limit] service pushed back. Waiting {backoff:.0f}s "
-                f"(attempt {attempt + 1} of {config.MAX_RETRIES}). This is "
-                f"the limiter doing its job, not a bug.",
+                f"  [retry] Model service is busy. Waiting {backoff:.0f}s "
+                f"before attempt {attempt + 2} of {config.MAX_RETRIES}.",
                 file=sys.stderr,
                 flush=True,
             )
             time.sleep(backoff)
 
-    raise RuntimeError(
-        f"Still rate limited after {config.MAX_RETRIES} attempts. Wait a "
-        f"minute and try again — your key is fine.\nLast error: {last_error}"
-    )
+    raise ModelUnavailable(
+        f"Model service still unavailable after {config.MAX_RETRIES} attempts. "
+        f"Try again later.\nLast error: {last_error}"
+    ) from last_error

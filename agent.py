@@ -18,7 +18,8 @@ from pprint import pprint
 
 import config
 import trace
-from tools import search_listings, suggest_outfit, create_fit_card
+import mcp_client
+from tools import suggest_outfit, create_fit_card
 from generate import ModelUnavailable
 
 
@@ -136,7 +137,9 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     ):
         trace.check_iterations(count)
         if tool_name == "search_listings":
-            session["search_results"] = search_listings(**session["parsed"])
+            session["search_results"] = mcp_client.call_tool(
+                "search_listings", session["parsed"]
+            )
             if not session["search_results"]:
                 session["error"] = (
                     "No matching listings. Try different keywords, increase your "
