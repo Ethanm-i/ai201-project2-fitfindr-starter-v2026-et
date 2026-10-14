@@ -219,28 +219,88 @@ Found my holy grail medium wash vintage Levi's 501 jeans while digging through t
 
 ## Run Log — Before
 
-<!-- Five criteria, five tries each, in this exact format.
-
-     Five, because your criteria are written out of five. Mark each try PASS
-     or FAIL, count the passes, and read that count against your target — a
-     row targeting 4 of 5 with three PASS cells is MISSED (3/5).
-
-     `python run_eval.py --label before` runs everything and writes the table
-     into results/. Paste it here and fill in the verdicts. -->
+Source: [full evaluation report](results/run_2026-10-13_2253_before.md).
+All 13 scenarios ran five times with caching off. Criteria 3 and 4 combine the
+five fixed queries within each Try column; all five cases must pass for that
+column to pass. The five selected item IDs were lst_001, lst_002, lst_003,
+lst_004, and lst_013.
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. A matching query completes all three tools | 4 of 5 | FAIL | PASS | PASS | PASS | PASS | MET (4/5) |
+| 2. An impossible query stops before the second tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. The selected item stays the same between tools | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. The fit card includes the find's details in a short caption | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. Search respects the user's price ceiling | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
-**Real output from one try**, pasted as text, naming the file and function
-that produced it:
+Criterion 1's first try stopped during `create_fit_card` because the model
+could not be reached. All 25 handoffs for criterion 3 matched ID, title, and
+price. All 25 captions for criterion 4 identified the item, included the correct
+price and platform, and contained 2–4 sentences. Platform capitalization was
+ignored. Criterion 5 returned the same two listings at $18 and $15 in every try,
+retaining the exact-limit item.
+
+**Criterion 1 — try 2**, `agent.py::run_agent`; caption from `tools.py::create_fit_card`:
 
 ```
+Obsessed with this Y2K baby tee with the cutest butterfly print I just snagged for only $18. I’m already planning to style it with baggy jeans, and it’s officially live on my depop shop if you want to steal the look!
+```
 
+**Criterion 2 — try 1**, `agent.py::run_agent`:
+
+```
+No matching listings. Try different keywords, increase your price limit, or remove the size filter.
+```
+
+The recorded search results were `[]` and captured `suggest_outfit` calls were `[]`.
+
+**Criterion 3 — try 1, Levi's query**, `agent.py::run_agent`;
+actual arguments captured by `run_eval.py::run_once`. Recorded ID, title, and
+price fields are shown below:
+
+```json
+{
+    "first_search_result":  {
+                                "id":  "lst_001",
+                                "title":  "Vintage Levi\u0027s 501 Jeans — Medium Wash",
+                                "price":  38.0
+                            },
+    "selected_item":  {
+                          "id":  "lst_001",
+                          "title":  "Vintage Levi\u0027s 501 Jeans — Medium Wash",
+                          "price":  38.0
+                      },
+    "suggest_outfit_new_item":  {
+                                    "id":  "lst_001",
+                                    "title":  "Vintage Levi\u0027s 501 Jeans — Medium Wash",
+                                    "price":  38.0
+                                }
+}
+```
+
+**Criterion 4 — try 1, Levi's query**, `tools.py::create_fit_card`:
+
+```
+Finally snagged the perfect pair of vintage Levi's 501s for just $38! I’m obsessed with how the structured fit balances out my baggier pieces, and I found them listed on depop.
+```
+
+**Criterion 5 — try 1**, `tools.py::search_listings` via
+`mcp_server.py::search_listings`. Recorded listing IDs, titles, and prices
+for `graphic tee under $18`:
+
+```json
+[
+    {
+        "id":  "lst_002",
+        "title":  "Y2K Baby Tee — Butterfly Print",
+        "price":  18.0
+    },
+    {
+        "id":  "lst_017",
+        "title":  "Mesh Long-Sleeve Top — Black",
+        "price":  15.0
+    }
+]
 ```
 
 ---

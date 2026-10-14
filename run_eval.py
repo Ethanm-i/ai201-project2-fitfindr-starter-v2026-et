@@ -30,8 +30,11 @@ mode — caching is what usually explains it.
 
 import argparse
 import datetime as dt
+import json
 import sys
 import traceback
+from copy import deepcopy
+from unittest.mock import patch
 
 import config
 import scenarios as scenario_module
@@ -39,7 +42,7 @@ import scenarios as scenario_module
 
 def run_once(scenario, use_trace=True):
     """One scenario, one try. Returns everything worth recording."""
-    from agent import run_agent
+    import agent
     from utils.data_loader import get_example_wardrobe, get_empty_wardrobe
     import trace as trace_module
 
@@ -51,11 +54,19 @@ def run_once(scenario, use_trace=True):
         trace_module.start_trace()
 
     record = {"error": None, "session": None, "trace": "", "crashed": None}
+    calls = []
+    def capture_outfit(*args, **kwargs):
+        calls.append(deepcopy({"args": args, "kwargs": kwargs}))
+        return original_outfit(*args, **kwargs)
+
+    original_outfit = agent.suggest_outfit
     try:
-        record["session"] = run_agent(scenario["query"], wardrobe)
+        with patch.object(agent, "suggest_outfit", side_effect=capture_outfit):
+            record["session"] = agent.run_agent(scenario["query"], wardrobe)
     except Exception as exc:  # noqa: BLE001 — a crash is a result worth logging
         record["crashed"] = f"{type(exc).__name__}: {exc}"
         record["traceback"] = traceback.format_exc()
+    record["suggest_outfit_calls"] = calls
 
     if use_trace:
         record["trace"] = trace_module.get_trace()
@@ -141,18 +152,8 @@ def write_report(rows, args):
         f"|---|---|{divider}|---|",
     ]
 
-    for row in rows:
-        scenario = row["scenario"]
-        number = scenario.get("criterion")
-        # A scenario with "criterion": None is a diagnostic run, not one of
-        # your five. It's marked so you don't paste an unnumbered row into a
-        # table the README asks you to number 1-5.
-        label_text = (
-            f"{number}. {scenario['name']}"
-            if number
-            else f"{scenario['name']} _(diagnostic — not one of your five)_"
-        )
-        lines.append(f"| {label_text} |  | {' | '.join([' '] * n)} |  |")
+    for number, (name, target) in scenario_module.CRITERIA.items():
+        lines.append(f"| {number}. {name} | {target} | {' | '.join([' '] * n)} |  |")
 
     lines += [
         "",
@@ -160,6 +161,18 @@ def write_report(rows, args):
         "> passed depends on the criterion you wrote, so it's yours to decide.",
         "> Count the passes, then read that count against your target: a row",
         "> targeting 4 of 5 with three PASS cells is MISSED (3/5).",
+        "",
+        "For criteria 3 and 4, each Try column combines that numbered try",
+        "across the five fixed queries. Mark it PASS only if all five cases",
+        "meet the criterion; criterion 4 must also cover five distinct item IDs.",
+        "For criterion 3, compare ID, title, and price in the first search result,",
+        "selected_item, and the captured suggest_outfit arguments.",
+        "For criterion 4, check item identity, exact price, platform, and 2–4 sentences.",
+        "For criterion 5, require nonempty results, every price <= 18, and",
+        "lst_002 (priced exactly $18) present. The query also matches listings",
+        "below the ceiling (lst_017 at $15) and above it (lst_006 at $24).",
+        "Score each criterion independently: a later model failure does not",
+        "invalidate an already-correct search or captured item handoff.",
         "",
         "---",
         "",
@@ -186,6 +199,13 @@ def write_report(rows, args):
 
             session = record["session"] or {}
             item = session.get("selected_item") or {}
+            lines += [
+                "Session and captured suggest_outfit arguments:", "", "```json",
+                json.dumps({"session": session,
+                            "suggest_outfit_calls": record["suggest_outfit_calls"]},
+                           ensure_ascii=False, indent=2),
+                "```", "",
+            ]
             lines += [
                 f"- stopped early: {'yes — ' + str(session.get('error')) if session.get('error') else 'no'}",
                 f"- selected_item: {item.get('title', '(none)')}"

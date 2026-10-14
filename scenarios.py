@@ -1,66 +1,46 @@
-"""
-The runs your test needs. ← UNIT 4, MILESTONE 3
+"""Fixed scenarios for the five criteria in criteria.md."""
 
-Each of your five criteria needs something run against it. A criterion about
-the empty-search branch needs an impossible query. One about the fit card needs
-the same item run more than once. Working that out is Milestone 3's first step,
-and this file is where you write it down.
-
-`run_eval.py` runs everything here five times and writes the run log — five
-because your criteria are written out of five.
-
-Three scenarios are filled in to show the shape. Add or change whatever your
-own criteria need — these are a starting point, not a fixed set.
-"""
-
-SCENARIOS = [
-    {
-        # A query the data can match. Criterion 1.
-        "name": "matching query completes",
-        "query": "vintage graphic tee under $30",
-        "wardrobe": "example",
-        "criterion": 1,
-    },
-    {
-        # A query nothing can match. Criterion 2 — the branch.
-        "name": "impossible query stops early",
-        "query": "designer ballgown size XXS under $5",
-        "wardrobe": "example",
-        "criterion": 2,
-    },
-    {
-        # A user with nothing saved. One of unit 4's three failure modes.
-        "name": "empty wardrobe",
-        "query": "denim jacket under $50",
-        "wardrobe": "empty",
-        "criterion": None,
-    },
-    # TODO: add what your criteria 3, 4 and 5 need.
-    #
-    # Set "criterion" to the number in criteria.md that the scenario tests.
-    # "criterion": None means a diagnostic run — useful to have, but it isn't
-    # one of your five, and run_eval.py marks it as such in the table.
-    #
-    # For a state criterion, any normal query works — what you're checking is
-    # what ends up in the session, not what the user typed.
-    #
-    # For a fit-card criterion, you probably want the SAME query listed more
-    # than once, or several different items, depending on what your criterion
-    # actually says.
+MATCHING_QUERIES = [
+    "Levi's 501 jeans",
+    "butterfly baby tee",
+    "oversized flannel plaid",
+    "90s track jacket navy stripe",
+    "silk slip dress floral midi",
 ]
 
-WARDROBES = ("example", "empty")
+CRITERIA = {
+    1: ("A matching query completes all three tools", "4 of 5"),
+    2: ("An impossible query stops before the second tool", "5 of 5"),
+    3: ("The selected item stays the same between tools", "5 of 5"),
+    4: ("The fit card includes the find's details in a short caption", "4 of 5"),
+    5: ("Search respects the user's price ceiling", "5 of 5"),
+}
+
+SCENARIOS = [
+    {"name": "matching query completes", "query": "vintage graphic tee under $30",
+     "wardrobe": "example", "criterion": 1},
+    {"name": "impossible query stops early", "query": "spacesuit size XXS under $1",
+     "wardrobe": "example", "criterion": 2},
+    *[
+        {"name": f"criterion {criterion}: {query}", "query": query,
+         "wardrobe": "example", "criterion": criterion}
+        for criterion in (3, 4)
+        for query in MATCHING_QUERIES
+    ],
+    {"name": "inclusive price ceiling", "query": "graphic tee under $18",
+     "wardrobe": "example", "criterion": 5},
+]
 
 
 def validate() -> list[str]:
-    """Complain about anything malformed, before a long run rather than during."""
     problems = []
     for i, scenario in enumerate(SCENARIOS, 1):
         if not scenario.get("query", "").strip():
             problems.append(f"scenario {i} has no query")
-        if scenario.get("wardrobe") not in WARDROBES:
-            problems.append(
-                f"scenario {i} has wardrobe {scenario.get('wardrobe')!r} — "
-                f"it should be one of {WARDROBES}"
-            )
+        if scenario.get("wardrobe") not in ("example", "empty"):
+            problems.append(f"scenario {i} has an invalid wardrobe")
+        if scenario.get("criterion") not in CRITERIA:
+            problems.append(f"scenario {i} has an invalid criterion")
+    if {s.get("criterion") for s in SCENARIOS} != set(CRITERIA):
+        problems.append("Scenarios must cover all five criteria")
     return problems
