@@ -488,19 +488,62 @@ comparison printed `PASS: results match`, and the full query completed.
 
 **What I changed:**
 
+Changed only `config.py::MAX_RETRIES` from 5 to 6. This setting counts total
+attempts, so a retryable model request now gets one additional attempt.
+For repeated 503 errors, the existing backoff waits another 60 seconds before
+attempt 6. The tradeoff is extra waiting and one additional request when the
+first five attempts fail.
+
 **Which failure it was meant to fix:**
+
+Criterion 1, try 1, stopped in `create_fit_card` after all five model attempts
+failed. One more attempt may allow a temporary service interruption to clear.
 
 ### Run Log — After
 
+Source: [full after-report](results/run_2026-10-13_2340_after.md).
+The same 13 scenarios ran five times with caching off, using the same scoring
+rules as the before-run. All 25 item handoffs matched, all 25 captions met the
+four caption requirements, and all five budget searches returned the $18 baby
+tee and $15 mesh top.
+
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. A matching query completes all three tools | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. An impossible query stops before the second tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. The selected item stays the same between tools | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. The fit card includes the find's details in a short caption | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. Search respects the user's price ceiling | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+
+| Criterion | Before | After |
+|---|---|---|
+| 1. Full three-tool run | MET (4/5) | MET (5/5) |
+| 2. Empty-search branch | MET (5/5) | MET (5/5) |
+| 3. Item handoff | MET (5/5) | MET (5/5) |
+| 4. Caption requirements | MET (5/5) | MET (5/5) |
+| 5. Price ceiling | MET (5/5) | MET (5/5) |
 
 **Did it help, and how do I know:**
+
+The after-run improved criterion 1 from 4/5 to 5/5 and kept the other four
+criteria at 5/5. There is also direct evidence that the additional attempt
+helped: criterion 3's butterfly baby tee scenario, try 1, completed
+`create_fit_card` on attempt 6 after five failed requests. With the previous
+limit, that request would have stopped after attempt 5. This rescued a full
+run, although criterion 3's item-handoff check had already succeeded.
+
+Actual terminal excerpt from `generate.py::generate`, followed by the trace
+from `agent.py::run_agent` and the completion line from `run_eval.py::main`:
+
+```text
+  [retry] Model service is busy. Waiting 60s before attempt 6 of 6.
+[3] create_fit_card
+      in:  dict with keys: outfit, new_item
+      out: Finally tracked down the perfect butterfly baby tee and I’m honestly obsessed with the fit. Snagged this Y2K g…
+  try 1: completed — fit card 211 chars
+```
+
+The change helped because one fit-card request succeeded on the sixth attempt after five failures, at the cost of another 60 seconds of waiting and one additional model call.
 
 <!-- If it made things worse, say that. Honestly reported, that earns full
      credit and is more interesting than one that worked. -->

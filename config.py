@@ -84,7 +84,7 @@ MODEL = os.getenv("AI201_MODEL", "gemini-3.5-flash-lite")
 
 REQUESTS_PER_MINUTE = 15
 SESSION_REQUEST_BUDGET = 300
-MAX_RETRIES = 5
+MAX_RETRIES = 6
 
 CACHE_DIR = ROOT / ".cache"
 
