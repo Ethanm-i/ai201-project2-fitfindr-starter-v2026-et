@@ -279,37 +279,120 @@ that produced it:
 
 ## Loop Trace
 
-<!-- One full run, printed step by step, with the MCP call visible in it.
-
-     `python app.py ask '...' --trace` once you've added the trace.step()
-     calls in Milestone 2.
-
-     Worth pasting BOTH the happy path and the empty-search path. The empty
-     one should be visibly shorter, because it stops. If your two traces are
-     the same length, your branch isn't working — and this is the fastest way
-     anyone will ever find that out. -->
+Recorded from the four terminal runs. Each attempted tool has one trace entry;
+search is labeled `search_listings (via MCP)`.
 
 **Happy path**
 
-```
+All three tools completed. One model response came from cache.
 
+```
+python app.py ask 'vintage graphic tee under $30, size M' --trace
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 8 items: Y2K Baby Tee — Butterfly Print, Mesh Long-Sleeve Top — Black, 90s Silk Slip Dress — Floral, Midi Length … +5 more
+[2] suggest_outfit
+      in:  dict with keys: new_item, wardrobe
+      out: This Y2K baby tee is a perfect addition to your wardrobe—the fitted silhouette will balance out your wider-cut…
+[3] create_fit_card
+      in:  dict with keys: outfit, new_item
+      out: Obsessed with this Y2K butterfly baby tee I just scored for only $18! It’s giving such a nostalgic early 2000s…
+
+  Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+  Outfit:   This Y2K baby tee is a perfect addition to your wardrobe—the fitted silhouette will balance out your wider-cut bottoms beautifully. Here are two ways to style it:
+
+**Option 1: The Y2K Streetwear Look**
+Pair the **Y2K Baby Tee** with your **Baggy straight-leg jeans, dark wash**. Add the **Black cropped zip hoodie** on top (leave it unzipped to show off the graphic) and finish with your **Chunky white sneakers** for an effortless, trendy vibe.
+
+**Option 2: Effortless Minimalist**
+Tuck the **Y2K Baby Tee** into your **Wide-leg khaki trousers**. Use the **Brown leather belt** to cinch the waist, and pair it with your **Black combat boots** to give the "cottagecore" butterfly print a bit of an edgy, grounded contrast.
+
+  Fit card: Obsessed with this Y2K butterfly baby tee I just scored for only $18! It’s giving such a nostalgic early 2000s vibe, so make sure to check my depop shop before it’s gone.
+
+1 model calls this session, 1 served from cache, 274 prompt + 50 output tokens
 ```
 
 **Empty search**
 
-```
+Stopped after search with zero model calls and named three changes the user can try.
 
 ```
+python app.py ask 'spacesuit size XXS under $1' --trace
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: [] (empty)
 
-**On the MCP move:** <!-- what changed in your code, and whether anything
-behaved differently afterwards. If the rewire didn't work, say exactly where it
-broke — the error text and the last thing that worked. That earns the point in
-full. -->
+  No matching listings. Try different keywords, increase your price limit, or remove the size filter.
 
-Registered `search_listings` and switched `run_agent()` to `mcp_client.call_tool`.
-Verification is pending: `python` is unavailable, and the virtual environment
-reports `No Python at '"C:\Users\eth\AppData\Local\Programs\Python\Python312\python.exe'`.
+0 model calls this session
+```
 
+**Empty wardrobe**
+
+Returned general styling advice and a fit card without crashing or returning an empty string.
+
+```
+python app.py ask 'graphic tee under $30' --empty-wardrobe --trace
+(running with an empty wardrobe)
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 7 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Mesh Long-Sleeve Top — Black … +4 more
+[2] suggest_outfit
+      in:  dict with keys: new_item, wardrobe
+      out: That butterfly baby tee is such a fun find! Those Y2K-inspired pieces are super versatile because they bridge …
+[3] create_fit_card
+      in:  dict with keys: outfit, new_item
+      out: Found the cutest Y2K baby tee with the dreamiest butterfly print today! Honestly obsessed with this find for o…
+
+  Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+  Outfit:   That butterfly baby tee is such a fun find! Those Y2K-inspired pieces are super versatile because they bridge the gap between "playful nostalgia" and "effortless everyday."
+
+Since it’s a fitted crop, the general rule of thumb is to balance it out with the volume of your bottoms. Here are two ways to style it:
+
+### 1. The "Off-Duty Model" Look (Casual & Cool)
+To lean into the Y2K aesthetic, pair the tee with a pair of **low-to-mid-rise baggy cargo pants or relaxed-fit light-wash denim.**
+*   **Why it works:** The snug fit of the baby tee balances the volume of the baggy pants, creating a classic early-2000s silhouette.
+*   **Complete the look:** Add a pair of chunky platform sneakers (like FILAs or New Balance) and a nylon shoulder bag or a butterfly hair clip to lean into the theme.
+
+### 2. The "Modern Cottagecore" Look (Soft & Sweet)
+If you want to emphasize the cottagecore side of the tags, pair the tee with a **flowy, floral-print midi skirt or a pleated tennis skirt.**
+*   **Why it works:** The structured, graphic nature of the tee adds an "edge" to a feminine, flowy skirt. A midi skirt in a solid neutral (like sage green, cream, or lavender) would pull the colors out of the butterfly print beautifully.
+*   **Complete the look:** Throw on some simple white canvas sneakers or leather loafers, and maybe a delicate beaded necklace to keep the vibe breezy and light.
+
+**Stylist Tip:** Since this is a fitted crop, if you ever feel like you want a bit more coverage, it looks incredible layered under a **loose-fitting unbuttoned flannel shirt or a cropped zip-up hoodie.** It lets the butterfly graphic peek through without you having to commit to a super-cropped look all day!
+
+**Is it worth $18?** If the fabric is in excellent condition and isn't pilling, $18 is a very fair price for a cute, authentic-feeling vintage graphic tee. It’s a staple piece that will likely get a ton of wear!
+
+  Fit card: Found the cutest Y2K baby tee with the dreamiest butterfly print today! Honestly obsessed with this find for only $18, you can grab it on my depop shop now before I decide to keep it for myself.
+
+2 model calls this session, 699 prompt + 517 output tokens
+```
+
+**Model unavailable**
+
+Stopped at `suggest_outfit` with an actionable message and no stack trace.
+The usage line confirms one model call and no cached response.
+`run_agent()` catches `ModelUnavailable` and stores the message in the session.
+
+```
+python app.py ask 'black denim jacket under $55' --trace
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 10 items: Denim Jacket — Light Wash, Cropped, Straight Leg Black Jeans — Faded, Vintage Levi's 501 Jeans — Medium Wash … +7 more
+[2] suggest_outfit
+      in:  dict with keys: new_item, wardrobe
+      →    The model couldn't be reached during suggest_outfit. Check GEMINI_API_KEY in .env and your internet connection; if the service is busy, try again later.
+
+  The model couldn't be reached during suggest_outfit. Check GEMINI_API_KEY in .env and your internet connection; if the service is busy, try again later.
+
+1 model calls this session
+```
+
+**On the MCP move:** Registered `search_listings` and switched `run_agent()`
+to `mcp_client.call_tool`. Tool discovery listed the correct inputs, the direct
+comparison printed `PASS: results match`, and the full query completed.
 
 ---
 

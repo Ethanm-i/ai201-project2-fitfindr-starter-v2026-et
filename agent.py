@@ -110,6 +110,7 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         than a stack trace. The import is already at the top of this file.
     """
     session = new_session(query, wardrobe)
+    trace.start_trace()
 
     description = session["query"]
     price_match = re.search(
@@ -137,24 +138,42 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     ):
         trace.check_iterations(count)
         if tool_name == "search_listings":
-            session["search_results"] = mcp_client.call_tool(
-                "search_listings", session["parsed"]
+            inputs = session["parsed"]
+            result_key = "search_results"
+        elif tool_name == "suggest_outfit":
+            inputs = {"new_item": session["selected_item"], "wardrobe": session["wardrobe"]}
+            result_key = "outfit_suggestion"
+        else:
+            inputs = {"outfit": session["outfit_suggestion"], "new_item": session["selected_item"]}
+            result_key = "fit_card"
+
+        step_name = "search_listings (via MCP)" if tool_name == "search_listings" else tool_name
+        try:
+            if tool_name == "search_listings":
+                result = mcp_client.call_tool(tool_name, inputs)
+            elif tool_name == "suggest_outfit":
+                result = suggest_outfit(**inputs)
+            else:
+                result = create_fit_card(**inputs)
+        except ModelUnavailable:
+            session["error"] = (
+                f"The model couldn't be reached during {tool_name}. "
+                "Check GEMINI_API_KEY in .env and your internet connection; "
+                "if the service is busy, try again later."
             )
-            if not session["search_results"]:
+            trace.step(step_name, inputs=inputs, note=session["error"])
+            return session
+
+        session[result_key] = result
+        trace.step(step_name, inputs=inputs, returned=result)
+        if tool_name == "search_listings":
+            if not result:
                 session["error"] = (
                     "No matching listings. Try different keywords, increase your "
                     "price limit, or remove the size filter."
                 )
                 return session
             session["selected_item"] = session["search_results"][0]
-        elif tool_name == "suggest_outfit":
-            session["outfit_suggestion"] = suggest_outfit(
-                session["selected_item"], session["wardrobe"]
-            )
-        else:
-            session["fit_card"] = create_fit_card(
-                session["outfit_suggestion"], session["selected_item"]
-            )
     return session
 
 

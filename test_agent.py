@@ -5,10 +5,29 @@ from pprint import pprint
 from unittest.mock import patch
 
 import agent
-from utils.data_loader import get_example_wardrobe
+from utils.data_loader import get_example_wardrobe, get_empty_wardrobe
 
 
 class AgentTests(unittest.TestCase):
+    def test_empty_wardrobe(self):
+        with patch("tools.generate", side_effect=["Pair it with neutral basics.", "A thrift find."]) as model:
+            session = agent.run_agent("graphic tee", get_empty_wardrobe())
+        self.assertIsNone(session["error"])
+        self.assertTrue(session["outfit_suggestion"].strip())
+        self.assertIn("general styling advice", model.call_args_list[0].args[0])
+
+    def test_model_unavailable(self):
+        for failed_call in (1, 2):
+            with self.subTest(failed_call=failed_call):
+                responses = ["Pair it with jeans."] * (failed_call - 1)
+                responses.append(agent.ModelUnavailable("Invalid API key"))
+                with patch("tools.generate", side_effect=responses) as model:
+                    session = agent.run_agent("graphic tee", get_example_wardrobe())
+                self.assertIn("model couldn't be reached", session["error"])
+                self.assertIn("GEMINI_API_KEY", session["error"])
+                self.assertIsNone(session["fit_card"])
+                self.assertEqual(model.call_count, failed_call)
+
     def test_happy_path(self):
         with patch("tools.generate", side_effect=[
             "Pair the tee with jeans and sneakers.",
