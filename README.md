@@ -210,6 +210,13 @@ Found my holy grail medium wash vintage Levi's 501 jeans while digging through t
 - *What I changed:* with cladue, i replaced the placed holder lop with the sesstion-based implementation and added complete-sessio printing and repeatable checks. 
 
 
+**Unit 4:** I asked ai to move search onto MCP, add error handling and traces,
+and help evaluate my runs. It updated the code and scenarios and used my actual
+outputs to fill the run logs. I increased the attempt limit from
+five to six and reran the tests; one request succeeded on the extra attempt.
+
+I also used claude to search up the errors that I was having when i run "python app.py ask 'vintage graphic tee under $30, size M' it returned the reason and a way to fix it but it also made changes without asking me for approve or me asking it to implement the solution.
+
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
      Don't fill these in during unit 3.
@@ -475,7 +482,8 @@ python app.py ask 'black denim jacket under $55' --trace
 
 **On the MCP move:** Registered `search_listings` and switched `run_agent()`
 to `mcp_client.call_tool`. Tool discovery listed the correct inputs, the direct
-comparison printed `PASS: results match`, and the full query completed.
+comparison printed `PASS: results match`, and the full query completed with
+the same search results as the direct call.
 
 ---
 
@@ -553,6 +561,11 @@ The change helped because one fit-card request succeeded on the sixth attempt af
 ---
 
 ## What's Still Broken
+
+No criteria were still missed in the after-run, but model-service outages can
+still exhaust all six attempts and stop a run. I would next test a fallback
+model.
+
 
 <!-- For each criterion still missed: what you'd do, and why you stopped where
      you did. "I ran out of time" is fine if it's true. Pretending nothing is
