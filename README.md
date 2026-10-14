@@ -325,15 +325,38 @@ for `graphic tee under $18`:
 
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | Matching query completes all three tools | 4 of 5 | MET (4/5) | Try 1 stopped during fit-card generation; tries 2–5 returned fit cards. |
+| 2 | Impossible query stops before tool 2 | 5 of 5 | MET (5/5) | Every try returned an actionable no-match message and captured zero suggest_outfit calls. |
+| 3 | Selected item stays the same between tools | 5 of 5 | MET (5/5) | All five queries in every try preserved ID, title, and price across the first result, selected_item, and captured tool argument: 25 matching handoffs. |
+| 4 | Caption contains item, price, platform, and 2–4 sentences | 4 of 5 | MET (5/5) | All five listings in every try met all four requirements: 25 passing captions. |
+| 5 | Search respects the inclusive price ceiling | 5 of 5 | MET (5/5) | Every try returned the $18 baby tee and $15 mesh top under an $18 ceiling, with no over-budget result. |
 
 **Diagnoses**
 
+No criterion missed its original target. Criterion 1 had one failed try, but
+four passes met its 4-of-5 target.
 
+The failed try occurred in the **create_fit_card tool**, at its model request.
+The terminal recorded repeated service-busy retries; after the final attempt,
+`generate()` raised `ModelUnavailable`. The loop caught it and returned an error
+with no fit card. Search and outfit generation had already succeeded. This is
+a model-service availability failure at the tool boundary, not a wrong branch,
+a changed session item, or a malformed caption. The saved error does not retain
+the provider's status code, so it cannot establish the exact provider error.
+
+Service-busy retries are the recurring pattern in the terminal output. Most
+eventually succeeded; they are not separate criterion failures. The completed
+report shows no repeated handoff, price-filter, or caption-format defect.
+
+**Were the targets too low?** Criteria 2, 3, and 5 already require 5 of 5.
+Criterion 1's allowance was used by a real availability failure. Criterion 4's
+4-of-5 target appears lenient for this sample because all 25 captions passed.
+For a future evaluation, I would tighten criterion 4 to 5 of 5 while retaining
+the same item, price, platform, and sentence-count checks. Passing this sample
+does not establish reliability on all listings or model runs.
+
+No criterion was unmeasurable or tested the wrong thing. The original criteria and targets remain unchanged. the suggested
+tightening does not change scoring.
 
 ---
 
